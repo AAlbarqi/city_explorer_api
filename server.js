@@ -20,27 +20,21 @@ app.get('/location', (req,res) =>{
   res.send(new Location(city, lData));
 });
 
-app.get('/weather', (req, res) => { 
-  let city = req.query.city;
+app.get('/weather', (req, res) => {
+  let weatherArr = [];
   wData.data.forEach(day => {
-    new Weather(city,day);
+    weatherArr.push(new Weather(day));
   });
   res.send(weatherArr);
 });
 
 app.all('*', (req, res) =>{
-  handleError(req, res);
-  res.status(404).send('Oops! this page does not exist');
+  res.status(500).send('Status 500: Sorry, something went wrong');
 });
 
 app.listen(PORT, ()=>{
   console.log('Server is listening to port ', PORT);
 });
-
-var handleError = (req,res) => {
-  console.log(res.status(500).statusCode)
-  return res.status(500).end();
-}
 
 function Location(city, data){
   this.search_query = city;
@@ -49,9 +43,7 @@ function Location(city, data){
   this.longitude = data[0].lon;
 }
 
-var weatherArr = weatherArr || [];
-function Weather(city, data){
+function Weather(data){
   this.forecast = data.weather.description;
-  this.time = data.valid_date;
-  weatherArr.push(this);
+  this.time = new Date(data.valid_date).toDateString();
 }
