@@ -46,5 +46,4 @@ function Location(city, data){
 function Weather(data){
   this.forecast = data.weather.description;
   this.time = new Date(data.valid_date).toDateString();
-  // weatherArr.push(this);
 }
