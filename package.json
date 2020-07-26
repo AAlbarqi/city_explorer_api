@@ -1,0 +1,25 @@
+{
+  "name": "package.json",
+  "version": "1.0.0",
+  "description": "**Author**: Ashjan Albarqi **Version**: 1.0.0 (increment the patch/fix version number if you make more commits past your first submission)",
+  "main": "index.js",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AAlbarqi/city_explorer_api.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AAlbarqi/city_explorer_api/issues"
+  },
+  "homepage": "https://github.com/AAlbarqi/city_explorer_api#readme"
+}
