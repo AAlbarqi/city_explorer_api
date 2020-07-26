@@ -21,9 +21,9 @@ app.get('/location', (req,res) =>{
 });
 
 app.get('/weather', (req, res) => {
-  weatherArr = [];
+  let weatherArr = [];
   wData.data.forEach(day => {
-    new Weather(day);
+    weatherArr.push(new Weather(day));
   });
   res.send(weatherArr);
 });
@@ -43,9 +43,8 @@ function Location(city, data){
   this.longitude = data[0].lon;
 }
 
-var weatherArr = [];
 function Weather(data){
   this.forecast = data.weather.description;
   this.time = new Date(data.valid_date).toDateString();
-  weatherArr.push(this);
+  // weatherArr.push(this);
 }
