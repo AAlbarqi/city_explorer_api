@@ -42,14 +42,14 @@ function findLocation(city) {
       } else {
         const url = `https://eu1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&q=${city}&format=json`;
         return superagent.get(url).then(data => {
-            let location = new Location(city, data);
-            let newLocation = `INSERT INTO locations (search_query, formatted_query, latitude, longitude) VALUES ($1, $2, $3, $4) RETURNING id;`;
-            let values = [location.search_query, location.formatted_query, location.latitude, location.longitude];
-            return client.query(newLocation, values).then(data => {
-                location.id = data.rows[0].id;
-                return location;
-              }).catch(error => console.log(error));
+          let location = new Location(city, data);
+          let newLocation = `INSERT INTO locations (search_query, formatted_query, latitude, longitude) VALUES ($1, $2, $3, $4) RETURNING id;`;
+          let values = [location.search_query, location.formatted_query, location.latitude, location.longitude];
+          return client.query(newLocation, values).then(data => {
+            location.id = data.rows[0].id;
+            return location;
           }).catch(error => console.log(error));
+        }).catch(error => console.log(error));
       }
     });
 }
