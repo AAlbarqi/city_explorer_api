@@ -46,7 +46,6 @@ function findLocation(city) {
             let location = new Location(city, data);
             let newLocation = `INSERT INTO locations (search_query, formatted_query, latitude, longitude) VALUES ($1, $2, $3, $4) RETURNING id;`;
             let values = [location.search_query, location.formatted_query, location.latitude, location.longitude];
-            console.log('49',values);
             return client.query(newLocation, values)
               .then(data => {
                 location.id = data.rows[0].id;
