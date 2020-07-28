@@ -26,7 +26,6 @@ app.get('/', (req, res) => {
 app.get('/location', (req, res) => {
   findLocation(req.query.city)
     .then(location => {
-      console.log('server.js line 27', location);
       res.send(location)
     })
     .catch(error => console.log(error));
@@ -44,18 +43,16 @@ function findLocation(city) {
         const url = `https://eu1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&q=${city}&format=json`;
         return superagent.get(url)
           .then(data => {
-            if (!data.body.length) { console.log('No Data in the DB or API') }
-            else {
-              let location = new Location(city, data);
-              let newSQL = `INSERT INTO locations (search_query, formatted_query, latitude, longitude) VALUES ($1, $2, $3, $4) RETURNING id;`;
-              let newValues = Object.values(location);
-              return client.query(newSQL, newValues)
-                .then(data => {
-                  location.id = data.rows[0].id;
-                  return location;
-                })
-                .catch(error => console.log(error));
-            }
+            let location = new Location(city, data);
+            let newLocation = `INSERT INTO locations (search_query, formatted_query, latitude, longitude) VALUES ($1, $2, $3, $4) RETURNING id;`;
+            let values = [location.search_query, location.formatted_query, location.latitude, location.longitude];
+            console.log('49',values);
+            return client.query(newLocation, values)
+              .then(data => {
+                location.id = data.rows[0].id;
+                return location;
+              })
+              .catch(error => console.log(error));
           })
           .catch(error => console.log(error));
       }
