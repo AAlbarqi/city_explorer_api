@@ -14,6 +14,8 @@ const GEOCODE_API_KEY = process.env.GEOCODE_API_KEY;
 const WEATHER_API_KEY = process.env.WEATHER_API_KEY;
 const TRAIL_API_KEY = process.env.TRAIL_API_KEY;
 const DATABASE_URL = process.env.DATABASE_URL;
+const MOVIES_API_KEY = process.env.MOVIES_API_KEY;
+const YELP_API_KEY = process.env.YELP_API_KEY;
 const PORT = process.env.PORT || 3100;
 
 const client = new pg.Client(DATABASE_URL);
@@ -23,6 +25,18 @@ app.get('/', (req, res) => {
   res.status(200).send('This is the homepage');
 });
 
+app.get('/weather', findWeather);
+app.get('/trails', findTrails);
+app.get('/movies', findMovies);
+app.get('/yelp', findYelps);
+
+app.all('*', (req, res) => {
+  res.status(500).send('Status 500: Sorry, something went wrong');
+});
+
+app.listen(PORT, () => {
+  console.log('Server is listening to port ', PORT);
+});
 app.get('/location', (req, res) => {
   findLocation(req.query.city)
     .then(location => {
@@ -54,7 +68,6 @@ function findLocation(city) {
     });
 }
 
-app.get('/weather', findWeather);
 
 function findWeather(req, res) {
   let lat = req.query.latitude;
@@ -66,10 +79,9 @@ function findWeather(req, res) {
       return dayWeather;
     });
     res.send(weatherArr);
-  }).catch(console.log('err'));
+  }).catch(error => console.log(error));
 }
 
-app.get('/trails', findTrails);
 
 function findTrails(req, res) {
   let lat = req.query.latitude;
@@ -81,15 +93,35 @@ function findTrails(req, res) {
       return trailData;
     });
     res.send(trails);
-  }).catch(console.log('err'));
+  }).catch(error => console.log(error));
 }
-app.all('*', (req, res) => {
-  res.status(500).send('Status 500: Sorry, something went wrong');
-});
 
-app.listen(PORT, () => {
-  console.log('Server is listening to port ', PORT);
-});
+
+function findMovies(req,res){
+  const url = `https://api.themoviedb.org/3/search/movie?api_key=${MOVIES_API_KEY}&query=${req.query.search_query}&page=1`;
+  superagent.get(url).then(data =>{
+    var movies = data.body.results.map(movie => {
+      var movieData = new Movie(movie);
+      return movieData;
+    })
+    res.send(movies);
+  }).catch(error => console.log(error))
+}
+
+
+function findYelps(req,res){
+  const url = `https://api.yelp.com/v3/businesses/search?location=${req.query.search_query}`;
+  superagent.get(url).set('Authorization', `Bearer ${YELP_API_KEY}`)
+    .then(data =>{
+      var yelps = data.body.businesses.map(yelp => {
+        var yelpData = new Yelp(yelp);
+        return yelpData;
+      });
+      res.send(yelps);
+    }).catch(error => console.log(error))
+}
+
+
 
 function Location(city, data) {
   this.search_query = city;
@@ -114,4 +146,22 @@ function Trail(data) {
   this.conditions = data.conditionStatus;
   this.condition_date = data.conditionDate.slice(0, 10);
   this.condition_time = data.conditionDate.slice(11, 19);
+}
+
+function Movie(data){
+  this.title = data.title ;
+  this.overview = data.overview ;
+  this.average_votes = data.vote_average ;
+  this.total_votes = data.vote_count;
+  this.image_url = `https://image.tmdb.org/t/p/w500${data.poster_path}`;
+  this.popularity= data.popularity;
+  this.released_on= data.release_date;
+}
+
+function Yelp(data){
+  this.name = data.name;
+  this.image_url= data.image_url;
+  this.price= data.price;
+  this.rating= data.rating;
+  this.url= data.url;
 }
