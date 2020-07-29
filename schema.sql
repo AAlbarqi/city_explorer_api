@@ -10,11 +10,11 @@ CREATE TABLE locations (
     longitude NUMERIC(10, 7)
   );
 
--- CREATE TABLE weathers (
---     id SERIAL PRIMARY KEY,
---     forecast VARCHAR(255),
---     time VARCHAR(255),
--- );
+CREATE TABLE weathers (
+    id SERIAL PRIMARY KEY,
+    forecast VARCHAR(255),
+    time VARCHAR(255),
+);
 
 -- CREATE TABLE trails (
 --     id SERIAL PRIMARY KEY,
