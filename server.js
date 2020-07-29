@@ -24,26 +24,29 @@ client.connect();
 app.get('/', (req, res) => {
   res.status(200).send('This is the homepage');
 });
-
+app.get('/location', locationData);
 app.get('/weather', findWeather);
 app.get('/trails', findTrails);
 app.get('/movies', findMovies);
 app.get('/yelp', findYelps);
 
+app.listen(PORT, () => {
+  console.log('Server is listening to port ', PORT);
+});
+
 app.all('*', (req, res) => {
   res.status(500).send('Status 500: Sorry, something went wrong');
 });
 
-app.listen(PORT, () => {
-  console.log('Server is listening to port ', PORT);
-});
-app.get('/location', (req, res) => {
+//////////////////////////////Functions///////////////////////////////
+//For locations, getting the location from db or API
+function locationData(req, res) {
   findLocation(req.query.city)
     .then(location => {
       res.send(location)
     })
     .catch(error => console.log(error));
-});
+}
 
 function findLocation(city) {
   const SQL = `SELECT * FROM locations WHERE search_query=$1;`;
@@ -68,60 +71,118 @@ function findLocation(city) {
     });
 }
 
+//getting the weather from db or API
 
 function findWeather(req, res) {
-  let lat = req.query.latitude;
-  let lon = req.query.longitude;
-  let url = `https://api.weatherbit.io/v2.0/forecast/daily?lat=${lat}&lon=${lon}&key=${WEATHER_API_KEY}`;
-  superagent.get(url).then(weatherData => {
-    var weatherArr = weatherData.body.data.map(day => {
-      const dayWeather = new Weather(day);
-      return dayWeather;
-    });
-    res.send(weatherArr);
-  }).catch(error => console.log(error));
+  const SQL = `SELECT * FROM weathers WHERE location_id=$1;`;
+  const values = [req.query.id];
+
+  return client.query(SQL, values).then(data => {
+    if (data.rowCount > 0) { res.send(data.rows); }
+    else {
+      let url = `https://api.weatherbit.io/v2.0/forecast/daily?lat=${req.query.latitude}&lon=${req.query.longitude}&key=${WEATHER_API_KEY}`;
+      superagent.get(url).then(weatherData => {
+        var weatherArr = weatherData.body.data.map(day => {
+          const dayWeather = new Weather(day);
+          return dayWeather;
+        });
+        let insertWeather = `INSERT INTO weathers(forecast, time, location_id) VALUES ($1, $2, $3);`;
+        weatherArr.forEach(weather => {
+          let weatherValues = Object.values(weather);
+          weatherValues.push(req.query.id);
+          return client.query(insertWeather, weatherValues)
+            .catch(error => console.log(error))
+        });
+        res.send(weatherArr);
+      }).catch(error => console.log(error));
+    }
+  });
 }
 
-
+//getting trails from db or hikingproject API
 function findTrails(req, res) {
-  let lat = req.query.latitude;
-  let lon = req.query.longitude;
-  let url = `https://www.hikingproject.com/data/get-trails?lat=${lat}&lon=${lon}&maxDistance=10&key=${TRAIL_API_KEY}`;
-  superagent.get(url).then(data => {
-    var trails = data.body.trails.map(trail => {
-      const trailData = new Trail(trail);
-      return trailData;
-    });
-    res.send(trails);
-  }).catch(error => console.log(error));
+  const SQL = `SELECT * FROM trails WHERE location_id=$1;`;
+  const values = [req.query.id];
+
+  return client.query(SQL, values).then(data => {
+    if (data.rowCount > 0) { res.send(data.rows); }
+    else {
+      let url = `https://www.hikingproject.com/data/get-trails?lat=${req.query.latitude}&lon=${req.query.longitude}&maxDistance=10&key=${TRAIL_API_KEY}`;
+      superagent.get(url).then(trailData => {
+        var trailArr = trailData.body.trails.map(trail => {
+          const trailDetails = new Trail(trail);
+          return trailDetails;
+        });
+        let insertTrail = `INSERT INTO trails(name, location, length, stars, star_votes, summary, trail_url, conditions, condition_date,
+          condition_time, location_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`;
+        trailArr.forEach(trail => {
+          let trailValues = Object.values(trail);
+          trailValues.push(req.query.id);
+          return client.query(insertTrail, trailValues)
+            .catch(error => console.log(error))
+        });
+        res.send(trailArr);
+      }).catch(error => console.log(error));
+    }
+  });
+}
+//getting movies from db or themoviesdb API
+function findMovies(req, res) {
+  const SQL = `SELECT * FROM movies WHERE location_id=$1;`;
+  const values = [req.query.id];
+
+  return client.query(SQL, values).then(data => {
+    if (data.rowCount > 0) { res.send(data.rows); }
+    else {
+      let url = `https://api.themoviedb.org/3/search/movie?api_key=${MOVIES_API_KEY}&query=${req.query.search_query}&page=1`;
+      superagent.get(url).then(movieData => {
+        var movieArr = movieData.body.results.map(movie => {
+          const movieDetails = new Movie(movie);
+          return movieDetails;
+        });
+        let insertMovie = `INSERT INTO movies(title, released_on, total_votes, average_votes, popularity, image_url, overview, location_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`;
+        movieArr.forEach(movie => {
+          let movieValues = Object.values(movie);
+          movieValues.push(req.query.id);
+          return client.query(insertMovie, movieValues)
+            .catch(error => console.log(error))
+        });
+        res.send(movieArr);
+      }).catch(error => console.log(error));
+    }
+  });
 }
 
+//getting yelps from db or yelps API
 
-function findMovies(req,res){
-  const url = `https://api.themoviedb.org/3/search/movie?api_key=${MOVIES_API_KEY}&query=${req.query.search_query}&page=1`;
-  superagent.get(url).then(data =>{
-    var movies = data.body.results.map(movie => {
-      var movieData = new Movie(movie);
-      return movieData;
-    })
-    res.send(movies);
-  }).catch(error => console.log(error))
+function findYelps(req, res) {
+  const SQL = `SELECT * FROM yelps WHERE location_id=$1;`;
+  const values = [req.query.id];
+
+  return client.query(SQL, values).then(data => {
+    if (data.rowCount > 0) { res.send(data.rows); }
+    else {
+      let url = `https://api.yelp.com/v3/businesses/search?location=${req.query.search_query}`;
+      superagent.get(url).set('Authorization', `Bearer ${YELP_API_KEY}`).then(yelpData => {
+        var yelpArr = yelpData.body.businesses.map(yelp => {
+          const yelpDetails = new Yelp(yelp);
+          return yelpDetails;
+        });
+        let insertYelp = `INSERT INTO yelps (name, url, rating, price, image_url, location_id) VALUES ($1, $2, $3, $4, $5, $6);`;
+        yelpArr.forEach(yelp => {
+          let yelpValues = Object.values(yelp);
+          yelpValues.push(req.query.id);
+          return client.query(insertYelp, yelpValues)
+            .catch(error => console.log(error))
+        });
+        res.send(yelpArr);
+      }).catch(error => console.log(error));
+    }
+  });
 }
 
-
-function findYelps(req,res){
-  const url = `https://api.yelp.com/v3/businesses/search?location=${req.query.search_query}`;
-  superagent.get(url).set('Authorization', `Bearer ${YELP_API_KEY}`)
-    .then(data =>{
-      var yelps = data.body.businesses.map(yelp => {
-        var yelpData = new Yelp(yelp);
-        return yelpData;
-      });
-      res.send(yelps);
-    }).catch(error => console.log(error))
-}
-
-
+////////////////////////////////Constructors///////////////////////////////////
 
 function Location(city, data) {
   this.search_query = city;
@@ -148,20 +209,20 @@ function Trail(data) {
   this.condition_time = data.conditionDate.slice(11, 19);
 }
 
-function Movie(data){
-  this.title = data.title ;
-  this.overview = data.overview ;
-  this.average_votes = data.vote_average ;
+function Movie(data) {
+  this.title = data.title;
+  this.overview = data.overview;
+  this.average_votes = data.vote_average;
   this.total_votes = data.vote_count;
   this.image_url = `https://image.tmdb.org/t/p/w500${data.poster_path}`;
-  this.popularity= data.popularity;
-  this.released_on= data.release_date;
+  this.popularity = data.popularity;
+  this.released_on = data.release_date;
 }
 
-function Yelp(data){
+function Yelp(data) {
   this.name = data.name;
-  this.image_url= data.image_url;
-  this.price= data.price;
-  this.rating= data.rating;
-  this.url= data.url;
+  this.image_url = data.image_url;
+  this.price = data.price;
+  this.rating = data.rating;
+  this.url = data.url;
 }
