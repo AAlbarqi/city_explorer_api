@@ -159,11 +159,12 @@ function findMovies(req, res) {
 function findYelps(req, res) {
   const SQL = `SELECT * FROM yelps WHERE location_id=$1;`;
   const values = [req.query.id];
+  const page = (req.query.page - 1)*5;
 
   return client.query(SQL, values).then(data => {
     if (data.rowCount > 0) { res.send(data.rows); }
     else {
-      let url = `https://api.yelp.com/v3/businesses/search?location=${req.query.search_query}`;
+      let url = `https://api.yelp.com/v3/businesses/search?location=${req.query.search_query}&limit=5&offset=${page}`;
       superagent.get(url).set('Authorization', `Bearer ${YELP_API_KEY}`).then(yelpData => {
         var yelpArr = yelpData.body.businesses.map(yelp => {
           const yelpDetails = new Yelp(yelp);
